@@ -11,7 +11,7 @@
 
 ## 🚀 Demo en vivo
 
-🔗 **[Ver demo](https://TU_USUARIO.github.io/fitcalc)** *(sustituye por tu URL real tras el despliegue)*
+🔗 **[Ver demo](https://rubenghumanes.github.io/calories-calc/)**
 
 ---
 
@@ -99,19 +99,19 @@ fitcalc/
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/TU_USUARIO/fitcalc.git
+git clone https://github.com/rubenghumanes/calories-calc.git
 ```
 
 2. Abre el archivo en tu navegador:
 ```bash
 # macOS
-open fitcalc/index.html
+open calories-calc/index.html
 
 # Linux
-xdg-open fitcalc/index.html
+xdg-open calories-calc/index.html
 
 # Windows (PowerShell)
-start fitcalc/index.html
+start calories-calc/index.html
 ```
 
 O simplemente arrastra el archivo `index.html` a una ventana del navegador.
@@ -150,5 +150,5 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...
 
 <p align="center">
   Hecho con 💪 para la comunidad fitness<br>
-  <a href="https://github.com/TU_USUARIO/fitcalc">⭐ Star este repo si te resulta útil</a>
+  <a href="https://github.com/rubenghumanes/calories-calc">⭐ Star este repo si te resulta útil</a>
 </p>
