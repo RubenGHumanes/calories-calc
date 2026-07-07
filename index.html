@@ -3,154 +3,635 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitCalc — Calculadora Fitness</title>
-<meta name="description" content="Calculadora minimalista de calorías diarias (TDEE) y % de grasa corporal. Fórmulas Mifflin-St Jeor, Katch-McArdle y US Navy.">
+<title>FitCalc - Calculadora Fitness</title>
+<meta name="description" content="Calculadora de calorías diarias (TDEE) y % de grasa corporal. Fórmulas validadas científicamente.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f0f2f5;
+    --bg: #f8f9fb;
     --surface: #ffffff;
+    --sidebar: #0f172a;
+    --sidebar-hover: #1e293b;
+    --sidebar-active: #4f46e5;
     --text: #0f172a;
+    --text-light: #f8fafc;
     --text-secondary: #64748b;
+    --text-sidebar: #94a3b8;
     --accent: #4f46e5;
     --accent-hover: #4338ca;
     --accent-light: #eef2ff;
     --accent-ghost: #e0e7ff;
     --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --code-text: #334155;
     --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 20px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.06);
-    --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.1);
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+    --shadow-card-hover: 0 4px 24px rgba(0,0,0,0.05);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --error: #ef4444;
+    --error-bg: #fef2f2;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --info: #3b82f6;
+    --info-bg: #eff6ff;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; line-height: 1.5; }
-  .app-container { width: 100%; max-width: 520px; }
-  header { text-align: center; margin-bottom: 28px; animation: fadeDown 0.5s ease; }
-  .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
-  .brand-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px var(--accent-light); }
-  .tagline { color: var(--text-secondary); font-size: 0.88rem; margin-top: 6px; }
 
-  .nav-tabs { display: flex; gap: 8px; background: var(--surface); padding: 6px; border-radius: var(--radius-lg); box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid var(--border); animation: fadeUp 0.5s ease 0.1s both; }
-  .nav-tab { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .nav-tab:hover { color: var(--text); background: var(--accent-light); }
-  .nav-tab.active { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.25); }
-  .nav-tab .icon { font-size: 1.1rem; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { 
+    background: var(--bg); 
+    color: var(--text); 
+    min-height: 100vh; 
+    display: flex; 
+    line-height: 1.6; 
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  .view { display: none; animation: fadeUp 0.4s ease; }
-  .view.active { display: block; }
+  .sidebar {
+    width: 260px;
+    background: var(--sidebar);
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    transition: transform 0.3s ease;
+    border-right: 1px solid rgba(255,255,255,0.04);
+  }
+  .sidebar-brand {
+    padding: 28px 24px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: white;
+  }
+  .sidebar-brand .dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.25);
+  }
+  .sidebar-tagline {
+    padding: 0 24px 24px;
+    font-size: 0.75rem;
+    color: var(--text-sidebar);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 12px;
+    flex: 1;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border-radius: var(--radius-sm);
+    color: var(--text-sidebar);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    position: relative;
+  }
+  .sidebar-item:hover {
+    background: var(--sidebar-hover);
+    color: var(--text-light);
+  }
+  .sidebar-item.active {
+    background: rgba(79,70,229,0.12);
+    color: white;
+  }
+  .sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+  }
+  .sidebar-item .icon {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: inline-block;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  .sidebar-item.active .icon {
+    background: var(--accent);
+  }
+  .sidebar-footer {
+    padding: 20px 24px;
+    font-size: 0.7rem;
+    color: var(--text-sidebar);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    line-height: 1.6;
+  }
 
-  .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--border); padding: 28px; margin-bottom: 20px; transition: var(--transition); }
-  .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-  .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
-  .card-icon { width: 40px; height: 40px; background: var(--accent-light); color: var(--accent); border-radius: 12px; display: grid; place-items: center; font-size: 1.2rem; }
-  .card-title { font-size: 1.1rem; font-weight: 700; }
-  .card-sub { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    padding: 36px 40px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .main-inner {
+    width: 100%;
+    max-width: 640px;
+    animation: fadeUp 0.5s ease;
+  }
+  .page-header {
+    margin-bottom: 28px;
+  }
+  .page-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+  .page-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 400;
+    max-width: 480px;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+    padding: 28px;
+    margin-bottom: 20px;
+    transition: var(--transition);
+  }
+  .card:hover { 
+    box-shadow: var(--shadow-card-hover);
+  }
+  .card-header-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .card-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.2px; }
+  .card-sub { font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; margin-top: 2px; }
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
   .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
   .field-row { display: flex; align-items: center; gap: 8px; }
-  .field-row input, .field-row select { flex: 1; }
-  label { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }
-  input, select { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.95rem; background: var(--bg); color: var(--text); outline: none; transition: var(--transition); width: 100%; }
-  input:focus, select:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-light); }
-  input::placeholder { color: #94a3b8; }
-  select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
+  input, select {
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: var(--transition);
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  input::placeholder { color: #94a3b8; font-weight: 400; }
+  select {
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
 
-  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; padding: 12px 14px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer; user-select: none; transition: var(--transition); border: 1.5px solid transparent; }
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 20px 0 12px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    cursor: pointer; user-select: none;
+    transition: var(--transition);
+    border: 1.5px solid transparent;
+  }
   .toggle-row:hover { border-color: var(--accent-ghost); background: var(--accent-light); }
-  .toggle-row .toggle-label { font-size: 0.88rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .toggle-row .toggle-label .badge { font-size: 0.65rem; background: var(--accent); color: white; padding: 2px 8px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .toggle-switch { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; transition: var(--transition); flex-shrink: 0; }
-  .toggle-switch::after { content: ''; position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: var(--transition); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-row .toggle-label {
+    font-size: 0.85rem; font-weight: 600; color: var(--text);
+    display: flex; align-items: center;
+  }
+  .toggle-row .toggle-label .badge {
+    font-size: 0.6rem; background: var(--accent); color: white;
+    padding: 2px 8px; border-radius: 20px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    margin-left: 10px;
+  }
+  .toggle-switch {
+    width: 40px; height: 22px;
+    background: var(--border); border-radius: 11px;
+    position: relative; transition: var(--transition); flex-shrink: 0;
+  }
+  .toggle-switch::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px;
+    background: white; border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: var(--transition);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  }
   .toggle-row.active .toggle-switch { background: var(--accent); }
-  .toggle-row.active .toggle-switch::after { transform: translateX(20px); }
+  .toggle-row.active .toggle-switch::after { transform: translateX(18px); }
 
   .advanced { display: none; overflow: hidden; }
-  .advanced.open { display: block; animation: slideDown 0.35s ease; }
-  @keyframes slideDown { from { opacity: 0; max-height: 0; transform: translateY(-8px); } to { opacity: 1; max-height: 800px; transform: translateY(0); } }
+  .advanced.open { display: block; animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1); }
+  @keyframes slideDown { 
+    from { opacity: 0; max-height: 0; transform: translateY(-6px); } 
+    to { opacity: 1; max-height: 800px; transform: translateY(0); } 
+  }
 
-  .link-card { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent-ghost); border-radius: var(--radius-sm); margin-top: 14px; cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit; }
-  .link-card:hover { background: var(--accent-ghost); border-style: solid; transform: translateX(4px); }
-  .link-card .link-icon { width: 36px; height: 36px; background: var(--accent); color: white; border-radius: 10px; display: grid; place-items: center; font-size: 1rem; flex-shrink: 0; }
+  .link-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px;
+    background: var(--accent-light);
+    border: 1.5px dashed var(--accent-ghost);
+    border-radius: var(--radius-sm);
+    margin-top: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none; color: inherit;
+  }
+  .link-card:hover { 
+    background: var(--accent-ghost); 
+    border-style: solid; 
+    box-shadow: 0 2px 8px rgba(79,70,229,0.08);
+  }
+  .link-card .link-icon {
+    width: 36px; height: 36px;
+    background: var(--accent); color: white;
+    border-radius: 10px; display: grid; place-items: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
   .link-card .link-text { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
-  .link-card .link-sub { font-size: 0.75rem; color: var(--text-secondary); }
+  .link-card .link-sub { font-size: 0.74rem; color: var(--text-secondary); }
   .link-card .arrow { margin-left: auto; color: var(--accent); font-size: 1.1rem; transition: transform 0.2s; }
-  .link-card:hover .arrow { transform: translateX(4px); }
+  .link-card:hover .arrow { transform: translateX(3px); }
 
-  .btn { width: 100%; padding: 13px; border: none; border-radius: var(--radius-sm); background: var(--accent); color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; margin-top: 18px; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.2px; }
-  .btn:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(79,70,229,0.25); }
+  .btn {
+    width: 100%; padding: 13px;
+    border: none; border-radius: var(--radius-sm);
+    background: var(--accent); color: white;
+    font-weight: 700; font-size: 0.9rem;
+    cursor: pointer; margin-top: 20px;
+    transition: var(--transition);
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; letter-spacing: 0.2px;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.15);
+  }
+  .btn:hover { 
+    background: var(--accent-hover); 
+    transform: translateY(-1px); 
+    box-shadow: 0 6px 18px rgba(79,70,229,0.22); 
+  }
   .btn:active { transform: translateY(0); }
 
-  .result { margin-top: 20px; padding: 20px; background: var(--accent-light); border-radius: var(--radius-md); text-align: center; display: none; border: 1px solid var(--accent-ghost); position: relative; overflow: hidden; }
-  .result::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
+  .result {
+    margin-top: 20px; padding: 24px 20px;
+    background: var(--accent-light);
+    border-radius: var(--radius-md);
+    text-align: center; display: none;
+    border: 1px solid var(--accent-ghost);
+    position: relative; overflow: hidden;
+  }
+  .result::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent);
+  }
   .result.show { display: block; animation: fadeUp 0.5s ease; }
-  .result .big { font-size: 2.4rem; font-weight: 800; color: var(--accent); line-height: 1; letter-spacing: -1px; }
-  .result .small { font-size: 0.88rem; color: var(--text-secondary); margin-top: 8px; font-weight: 500; }
-  .result .detail { font-size: 0.78rem; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--accent-ghost); line-height: 1.5; }
+  .result .big { font-size: 2.4rem; font-weight: 800; color: var(--accent); line-height: 1; letter-spacing: -1.2px; }
+  .result .small { font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; font-weight: 500; }
+  .result .detail { font-size: 0.75rem; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--accent-ghost); line-height: 1.6; }
 
-  .note { font-size: 0.75rem; color: var(--text-secondary); margin-top: 12px; line-height: 1.5; }
+  .analysis {
+    margin-top: 20px;
+    display: none;
+  }
+  .analysis.show { display: block; animation: fadeUp 0.5s ease; }
+  .analysis-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .analysis-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .analysis-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-essential { background: #dbeafe; color: #1e40af; }
+  .badge-athlete { background: #d1fae5; color: #065f46; }
+  .badge-fitness { background: #dcfce7; color: #15803d; }
+  .badge-average { background: #fef9c3; color: #854d0e; }
+  .badge-overweight { background: #ffedd5; color: #9a3412; }
+  .badge-obese { background: #fee2e2; color: #991b1b; }
+  .badge-unknown { background: var(--bg); color: var(--text-secondary); }
 
-  .help-btn { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-light); color: var(--accent); border: 1.5px solid var(--accent-ghost); font-size: 0.7rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition); flex-shrink: 0; }
+  .analysis-text {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .analysis-text strong { color: var(--text); }
+  .analysis-text:last-child { margin-bottom: 0; }
+
+  .note { font-size: 0.75rem; color: var(--text-secondary); margin-top: 12px; line-height: 1.6; }
+
+  .help-btn {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent);
+    border: 1.5px solid var(--accent-ghost);
+    font-size: 0.65rem; font-weight: 700;
+    cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center;
+    transition: var(--transition); flex-shrink: 0;
+  }
   .help-btn:hover { background: var(--accent); color: white; }
 
-  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; opacity: 0; transition: opacity 0.3s ease; }
+  .info-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: var(--accent-light);
+    border-radius: 6px;
+    transition: var(--transition);
+    border: 1px solid var(--accent-ghost);
+    cursor: pointer;
+  }
+  .info-link:hover {
+    background: var(--accent-ghost);
+    border-color: var(--accent);
+  }
+  .info-link svg {
+    width: 14px; height: 14px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--sidebar);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    text-align: center;
+    max-width: 90vw;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .toast.error {
+    background: var(--error);
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.4);
+    backdrop-filter: blur(5px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 24px;
+    opacity: 0; transition: opacity 0.25s ease;
+  }
   .modal-overlay.show { display: flex; opacity: 1; }
-  .modal { background: var(--surface); border-radius: var(--radius-lg); max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transform: translateY(20px) scale(0.96); transition: transform 0.3s ease; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 50px -12px rgba(0,0,0,0.08); border: 1px solid var(--border);
+    transform: translateY(16px) scale(0.98);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   .modal-overlay.show .modal { transform: translateY(0) scale(1); }
-  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
-  .modal-title { font-size: 1.05rem; font-weight: 700; }
-  .modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bg); color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; display: grid; place-items: center; transition: var(--transition); }
+  .modal-header { padding: 22px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 1rem; font-weight: 700; }
+  .modal-close {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: none; background: var(--bg); color: var(--text-secondary);
+    cursor: pointer; font-size: 1rem;
+    display: grid; place-items: center; transition: var(--transition);
+  }
   .modal-close:hover { background: var(--accent-light); color: var(--accent); }
   .modal-body { padding: 16px 24px 24px; }
   .diagram { width: 100%; background: var(--bg); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px; }
   .diagram svg { width: 100%; height: auto; display: block; }
-  .measure-list { display: flex; flex-direction: column; gap: 10px; }
+  .measure-list { display: flex; flex-direction: column; gap: 8px; }
   .measure-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); }
-  .measure-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
+  .measure-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
   .measure-text { font-size: 0.82rem; color: var(--text); line-height: 1.5; }
   .measure-text strong { color: var(--accent); }
 
-  footer { text-align: center; margin-top: 32px; color: var(--text-secondary); font-size: 0.75rem; animation: fadeUp 0.6s ease 0.3s both; }
-  footer .heart { color: #ef4444; display: inline-block; animation: heartbeat 1.5s infinite; }
-  @keyframes heartbeat { 0%,100%{transform:scale(1)} 14%{transform:scale(1.15)} 28%{transform:scale(1)} 42%{transform:scale(1.15)} }
+  .docs-section { margin-bottom: 32px; scroll-margin-top: 24px; }
+  .docs-section h2 {
+    font-size: 1.15rem; font-weight: 700;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent-light);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .docs-section h2 .num {
+    width: 26px; height: 26px;
+    background: var(--accent); color: white;
+    border-radius: 50%; font-size: 0.75rem;
+    display: grid; place-items: center; flex-shrink: 0;
+    font-weight: 700;
+  }
+  .docs-section p {
+    color: var(--text-secondary); font-size: 0.88rem;
+    margin-bottom: 12px; line-height: 1.7;
+  }
+  .docs-section p strong { color: var(--text); }
+  .formula-box {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.82rem; color: var(--code-text);
+    margin: 12px 0; overflow-x: auto;
+    line-height: 1.8;
+  }
+  .formula-box .comment { color: #94a3b8; font-style: italic; }
+  .formula-box .var { color: var(--accent); font-weight: 600; }
+  .formula-box .op { color: #0f172a; }
+  .docs-link {
+    color: var(--accent); text-decoration: none; font-weight: 600;
+    border-bottom: 1px solid var(--accent-ghost);
+    transition: var(--transition);
+  }
+  .docs-link:hover { border-bottom-color: var(--accent); }
+  .docs-tip {
+    background: #fefce8; border: 1px solid #fde047;
+    border-radius: var(--radius-sm); padding: 14px 16px;
+    margin: 14px 0; font-size: 0.82rem; color: #713f12;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .docs-tip .tip-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .docs-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.82rem; }
+  .docs-table th, .docs-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  .docs-table th { background: var(--bg); font-weight: 600; color: var(--text); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .docs-table td { color: var(--text-secondary); }
+  .docs-table tr:hover td { background: var(--bg); }
 
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes fadeDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+  .view { display: none; animation: fadeUp 0.35s ease; }
+  .view.active { display: block; }
 
-  @media (max-width: 480px) {
+  @keyframes fadeUp { 
+    from { opacity: 0; transform: translateY(12px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+
+  .mobile-toggle {
+    display: none; position: fixed;
+    top: 14px; left: 14px; z-index: 60;
+    width: 40px; height: 40px;
+    background: var(--sidebar); color: white;
+    border: none; border-radius: 10px;
+    font-size: 1.1rem; cursor: pointer;
+    align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); width: 280px; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 56px 20px 20px; }
+    .mobile-toggle { display: flex; }
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+      z-index: 45; display: none;
+      backdrop-filter: blur(2px);
+    }
+    .overlay.show { display: block; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    .card { padding: 20px; }
+    .card { padding: 22px; }
     .result .big { font-size: 2rem; }
+  }
+  @media (max-width: 480px) {
+    .card { padding: 18px; }
+    .result .big { font-size: 1.8rem; }
+    .main { padding: 52px 14px 14px; }
+    .page-title { font-size: 1.35rem; }
   }
 </style>
 </head>
 <body>
 
-<div class="app-container">
-  <header>
-    <div class="brand"><div class="brand-dot"></div>FitCalc</div>
-    <div class="tagline">Calculadora de composición corporal & metabolismo</div>
-  </header>
+<button class="mobile-toggle" onclick="toggleSidebar()" id="mobile-btn" aria-label="Abrir menú">&#9776;</button>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-  <nav class="nav-tabs">
-    <button class="nav-tab active" id="tab-cal" onclick="switchView('cal')">
-      <span class="icon">&#128293;</span> Calorías
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><div class="dot"></div>FitCalc</div>
+  <div class="sidebar-tagline">Calculadora de composición corporal y metabolismo</div>
+  <nav class="sidebar-nav">
+    <button class="sidebar-item active" id="nav-cal" onclick="switchView('cal')">
+      <span class="icon"></span> Calorías (TDEE)
     </button>
-    <button class="nav-tab" id="tab-grasa" onclick="switchView('grasa')">
-      <span class="icon">&#128207;</span> Grasa corporal
+    <button class="sidebar-item" id="nav-grasa" onclick="switchView('grasa')">
+      <span class="icon"></span> Grasa corporal
+    </button>
+    <button class="sidebar-item" id="nav-docs" onclick="switchView('docs')">
+      <span class="icon"></span> Documentación
     </button>
   </nav>
+  <div class="sidebar-footer">
+    Fórmulas: Mifflin-St Jeor, Katch-McArdle y US Navy<br>
+    Resultados orientativos
+  </div>
+</aside>
 
-  <!-- VISTA CALORÍAS -->
+<main class="main">
+  <div class="main-inner">
+
   <div class="view active" id="view-cal">
+    <div class="page-header">
+      <div class="page-title">Calorías diarias</div>
+      <div class="page-subtitle">Calcula tu gasto energético total estimado (TDEE) con fórmulas validadas científicamente</div>
+    </div>
+
     <div class="card">
-      <div class="card-header">
-        <div class="card-icon">&#128293;</div>
+      <div class="card-header-row">
         <div>
-          <div class="card-title">Calorías diarias (TDEE)</div>
-          <div class="card-sub">Gasto energético total estimado</div>
+          <div class="card-title">Datos personales</div>
+          <div class="card-sub">Completa los campos obligatorios</div>
         </div>
       </div>
 
@@ -174,7 +655,10 @@
       </div>
 
       <div class="field" style="margin-top:12px;">
-        <label>Nivel de actividad</label>
+        <div class="field-row">
+          <label style="margin:0;">Nivel de actividad</label>
+          <button class="help-btn" onclick="event.stopPropagation();goToDocs('actividad')" title="Ver factores de actividad">?</button>
+        </div>
         <select id="c-actividad">
           <option value="1.2">Sedentario (poco o nada de ejercicio)</option>
           <option value="1.375">Ligero (1-3 días/semana)</option>
@@ -191,7 +675,10 @@
       <div class="advanced" id="adv-cal">
         <div class="grid-2">
           <div class="field">
-            <label>% Grasa corporal (opcional)</label>
+            <div class="field-row">
+              <label style="margin:0;">% Grasa corporal (opcional)</label>
+              <button class="help-btn" onclick="event.stopPropagation();goToDocs('katch')" title="¿Por qué usar % de grasa?">?</button>
+            </div>
             <input type="number" id="c-grasa" placeholder="20.0" min="3" max="60" step="0.1">
           </div>
           <div class="field">
@@ -207,13 +694,12 @@
         </div>
         <p class="note">Si introduces tu % de grasa, se usa <strong>Katch-McArdle</strong> (más precisa para cuerpos atípicos). Si no, <strong>Mifflin-St Jeor</strong>.</p>
 
-        <div class="link-card" onclick="switchView('grasa')">
-          <div class="link-icon">&#128207;</div>
+        <div class="link-card" onclick="switchView('grasa')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')switchView('grasa')">
           <div>
             <div class="link-text">¿No conoces tu % de grasa corporal?</div>
-            <div class="link-sub">Calcúlalo ahora con la fórmula de la Marina &#8594;</div>
+            <div class="link-sub">Calcúlalo ahora con la fórmula de la Marina</div>
           </div>
-          <div class="arrow">&#8250;</div>
+          <div class="arrow">&rsaquo;</div>
         </div>
       </div>
 
@@ -224,17 +710,34 @@
         <div class="small" id="sub-cal">kcal / día</div>
         <div class="detail" id="det-cal"></div>
       </div>
+
+      <div class="analysis" id="analysis-cal">
+        <div class="analysis-card">
+          <div class="analysis-title">Análisis de tu resultado</div>
+          <div class="analysis-text" id="analysis-cal-text"></div>
+        </div>
+        <div class="link-card" onclick="switchView('grasa')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')switchView('grasa')">
+          <div>
+            <div class="link-text">Conoce tu % de grasa corporal</div>
+            <div class="link-sub">Obtén recomendaciones detalladas sobre tu composición</div>
+          </div>
+          <div class="arrow">&rsaquo;</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- VISTA GRASA CORPORAL -->
   <div class="view" id="view-grasa">
+    <div class="page-header">
+      <div class="page-title">% Grasa corporal</div>
+      <div class="page-subtitle">Estimación de composición corporal con la fórmula del Departamento de Defensa de EE.UU.</div>
+    </div>
+
     <div class="card">
-      <div class="card-header">
-        <div class="card-icon">&#128207;</div>
+      <div class="card-header-row">
         <div>
-          <div class="card-title">% Grasa corporal</div>
-          <div class="card-sub">Estimación de composición corporal</div>
+          <div class="card-title">Datos personales</div>
+          <div class="card-sub">Completa los campos obligatorios</div>
         </div>
       </div>
 
@@ -254,34 +757,41 @@
         <div class="toggle-switch"></div>
       </div>
       <div class="advanced" id="adv-grasa">
-        <div class="grid-3">
+        <div class="grid-3" id="grid-medidas">
           <div class="field">
             <div class="field-row">
               <label style="margin:0;">Cuello (cm)</label>
-              <button class="help-btn" onclick="openModal('neck')" title="¿Dónde medir?">?</button>
+              <button class="help-btn" onclick="event.stopPropagation();openModal('neck')" title="¿Dónde medir?">?</button>
             </div>
             <input type="number" id="g-cuello" placeholder="40.0" min="20" max="70" step="0.1">
           </div>
           <div class="field">
             <div class="field-row">
               <label style="margin:0;">Cintura (cm)</label>
-              <button class="help-btn" onclick="openModal('waist')" title="¿Dónde medir?">?</button>
+              <button class="help-btn" onclick="event.stopPropagation();openModal('waist')" title="¿Dónde medir?">?</button>
             </div>
             <input type="number" id="g-cintura" placeholder="85.0" min="40" max="200" step="0.1">
           </div>
           <div class="field" id="field-cadera" style="display:none;">
             <div class="field-row">
               <label style="margin:0;">Cadera (cm)</label>
-              <button class="help-btn" onclick="openModal('hip')" title="¿Dónde medir?">?</button>
+              <button class="help-btn" onclick="event.stopPropagation();openModal('hip')" title="¿Dónde medir?">?</button>
             </div>
             <input type="number" id="g-cadera" placeholder="95.0" min="40" max="200" step="0.1">
           </div>
         </div>
         <p class="note">Fórmula del Departamento de Defensa de EE.UU. (US Navy). Para mujeres se requiere medida de cadera. Mide la cintura a la altura del ombligo.</p>
+        <a class="info-link" onclick="goToDocs('navy')">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Ver fórmula completa y cómo medir correctamente
+        </a>
       </div>
 
       <div class="field" style="margin-top:12px;" id="g-peso-field">
-        <label>Peso (kg) — solo para estimación básica</label>
+        <div class="field-row">
+          <label style="margin:0;">Peso (kg) — solo para estimación básica</label>
+          <button class="help-btn" onclick="event.stopPropagation();goToDocs('bmi')" title="Ver estimación por BMI">?</button>
+        </div>
         <input type="number" id="g-peso" placeholder="75.0" min="30" max="250" step="0.1">
       </div>
 
@@ -294,30 +804,271 @@
       </div>
     </div>
 
-    <div class="card" style="padding:18px; cursor:pointer;" onclick="switchView('cal')">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div style="width:36px;height:36px;background:var(--accent-light);color:var(--accent);border-radius:10px;display:grid;place-items:center;font-size:1rem;">&#128293;</div>
-        <div style="flex:1;">
-          <div style="font-size:0.88rem;font-weight:700;">Volver a calculadora de calorías</div>
-          <div style="font-size:0.75rem;color:var(--text-secondary);">Usa tu % de grasa para un cálculo más preciso del TDEE</div>
+    <div class="analysis" id="analysis-grasa">
+      <div class="analysis-card">
+        <div class="analysis-title">Clasificación <span class="analysis-badge" id="badge-grasa">—</span></div>
+        <div class="analysis-text" id="analysis-grasa-text"></div>
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-title">Recomendaciones</div>
+        <div class="analysis-text" id="analysis-grasa-rec"></div>
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-title">Rangos por edad y sexo</div>
+        <div class="analysis-text" id="analysis-grasa-rangos"></div>
+        <table class="docs-table" id="table-rangos">
+          <tr><th>Categoría</th><th>Hombres</th><th>Mujeres</th></tr>
+          <tr><td>Esencial</td><td>2-5%</td><td>10-13%</td></tr>
+          <tr><td>Atleta</td><td>6-13%</td><td>14-20%</td></tr>
+          <tr><td>Fitness</td><td>14-17%</td><td>21-24%</td></tr>
+          <tr><td>Promedio</td><td>18-24%</td><td>25-31%</td></tr>
+          <tr><td>Sobrepeso</td><td>25-29%</td><td>32-39%</td></tr>
+          <tr><td>Obeso</td><td>&ge;30%</td><td>&ge;40%</td></tr>
+        </table>
+      </div>
+      <div class="link-card" onclick="goToDocs('consecuencias')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')goToDocs('consecuencias')">
+        <div>
+          <div class="link-text">Más información sobre composición corporal</div>
+          <div class="link-sub">Consulta tablas detalladas, estudios y referencias científicas</div>
         </div>
-        <div style="color:var(--accent);font-size:1.2rem;">&#8249;</div>
+        <div class="arrow">&rsaquo;</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:16px; cursor:pointer;" onclick="switchView('cal')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')switchView('cal')">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:0.85rem;font-weight:700;">Volver a calculadora de calorías</div>
+          <div style="font-size:0.74rem;color:var(--text-secondary);">Usa tu % de grasa para un cálculo más preciso del TDEE</div>
+        </div>
+        <div style="color:var(--accent);font-size:1.2rem;">&lsaquo;</div>
       </div>
     </div>
   </div>
 
-  <footer>
-    Fórmulas: Mifflin-St Jeor, Katch-McArdle &amp; US Navy<br>
-    <span style="opacity:0.7;">Los resultados son orientativos. Consulta a un profesional.</span>
-  </footer>
-</div>
+  <div class="view" id="view-docs">
+    <div class="page-header">
+      <div class="page-title">Documentación</div>
+      <div class="page-subtitle">Consejos, fórmulas y referencias basadas en evidencia científica</div>
+    </div>
 
-<!-- MODAL DE AYUDA -->
+    <!-- 1. Consejos prácticos -->
+    <div class="card docs-section" id="docs-consejos">
+      <h2><span class="num">1</span> Consejos prácticos</h2>
+      <p><strong>1. No te obsesiones con los números.</strong> Todas estas fórmulas son estimaciones. Tu metabolismo real puede variar &pm;10-15% según la genética, el historial de dietas y la microbiota.</p>
+      <p><strong>2. Usa la tendencia, no el valor absoluto.</strong> Mide tu peso y circunferencias semanalmente bajo las mismas condiciones (mañana, en ayunas, tras ir al baño).</p>
+      <p><strong>3. Ajusta según resultados.</strong> Si tras 2-3 semanas no ves cambios, ajusta las calorías en &pm;100-200 kcal. El cuerpo se adapta; los "plateaus" son normales.</p>
+      <p><strong>4. Prioriza la proteína.</strong> En déficit calórico, mantén 1.6-2.2 g/kg de peso corporal para preservar músculo. En superávit, sube a 2.0-2.4 g/kg si entrenas fuerza.</p>
+      <p><strong>5. Descansa.</strong> El sueño afecta directamente al metabolismo (ghrelina/leptina) y a las decisiones alimentarias. Apunta a 7-9 horas de calidad.</p>
+      <p><strong>6. Hidratación.</strong> El agua representa un 60% del peso corporal. La deshidratación del 2% ya reduce el rendimiento físico y cognitivo. Bebe 30-40 ml/kg al día.</p>
+      <p><strong>7. NEAT (Termogénesis sin ejercicio).</strong> Caminar, subir escaleras, estar de pie... puede suponer 200-900 kcal extra al día. Usa un podómetro o reloj inteligente.</p>
+      <p><strong>8. Periodización.</strong> No mantengas un déficit o superávit eterno. Programa semanas de mantenimiento cada 8-12 semanas para resetear hormonas y metabolismo.</p>
+      <p><strong>9. Fibra y micronutrientes.</strong> Consume 25-35 g de fibra al día y asegura vitaminas D, B12, hierro, zinc y magnesio. La deficiencia de magnesio afecta al sueño y recuperación.</p>
+      <p><strong>10. Consistencia &gt; perfección.</strong> Un 80% de adherencia durante un año supera un 100% durante un mes. Los hábitos sostenibles ganan siempre.</p>
+    </div>
+
+    <!-- 2. Consecuencias de cada nivel -->
+    <div class="card docs-section" id="docs-consecuencias">
+      <h2><span class="num">2</span> Consecuencias de cada nivel de grasa</h2>
+      <p><strong>Grasa esencial (2-5% H / 10-13% M):</strong> Nivel mínimo para la supervivencia. En hombres, puede alterar la producción de testosterona, libido y estado de ánimo. En mujeres, puede causar amenorrea, pérdida de densidad ósea y problemas de fertilidad. Solo recomendable para competiciones de culturismo de corta duración con supervisión médica.</p>
+      <p><strong>Atleta (6-13% H / 14-20% M):</strong> Excelente rendimiento deportivo y definición muscular. Requiere disciplina estricta en nutrición y entrenamiento. A largo plazo, puede ser difícil de mantener sin supervisión profesional. El riesgo de enfermedades infecciosas aumenta ligeramente.</p>
+      <p><strong>Fitness (14-17% H / 21-24% M):</strong> Buen equilibrio entre estética, salud y sostenibilidad. Es el rango que la mayoría de personas puede mantener con hábitos saludables sin extremos. Riesgo metabólico mínimo y buena capacidad de recuperación.</p>
+      <p><strong>Promedio (18-24% H / 25-31% M):</strong> Rango saludable para la población general. No implica riesgos metabólicos significativos, aunque puede haber margen de mejora en composición corporal. Es un buen punto de partida para objetivos de fitness.</p>
+      <p><strong>Sobrepeso (25-29% H / 32-39% M):</strong> Aumento del riesgo de enfermedades cardiovasculares, diabetes tipo 2, apnea del sueño, síndrome metabólico y ciertos tipos de cáncer. Recomendable iniciar cambios graduales en dieta y actividad física. La pérdida del 5% del peso ya mejora la sensibilidad a la insulina.</p>
+      <p><strong>Obeso (&ge;30% H / &ge;40% M):</strong> Riesgo elevado de comorbilidades graves: hipertensión, dislipidemia, enfermedad coronaria, accidente cerebrovascular, osteoartritis y depresión. Se recomienda consulta médica y un plan estructurado de pérdida de peso supervisado. La pérdida del 5-10% del peso corporal ya mejora marcadores de salud de forma significativa.</p>
+    </div>
+
+    <!-- 3. Rangos por edad -->
+    <div class="card docs-section" id="docs-edad">
+      <h2><span class="num">3</span> % de grasa por edad</h2>
+      <p>Los rangos saludables varían con la edad. El American Council on Exercise (ACE) y el American College of Sports Medicine (ACSM) proponen estos ajustes:</p>
+      <table class="docs-table">
+        <tr><th>Edad</th><th>Hombres (sano)</th><th>Mujeres (sana)</th></tr>
+        <tr><td>20-29</td><td>8-19%</td><td>16-24%</td></tr>
+        <tr><td>30-39</td><td>11-21%</td><td>17-25%</td></tr>
+        <tr><td>40-49</td><td>13-23%</td><td>20-27%</td></tr>
+        <tr><td>50-59</td><td>15-25%</td><td>22-29%</td></tr>
+        <tr><td>60-69</td><td>16-26%</td><td>23-30%</td></tr>
+        <tr><td>70-79</td><td>17-27%</td><td>24-31%</td></tr>
+      </table>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>Con la edad, la masa magra tiende a disminuir (sarcopenia) y la grasa a aumentar. Los rangos saludables se desplazan ligeramente hacia arriba, pero mantenerse activo con entrenamiento de fuerza puede retrasar este proceso significativamente hasta 10-15 años.</div>
+      </div>
+    </div>
+
+    <!-- 4. Rangos generales -->
+    <div class="card docs-section" id="docs-rangos">
+      <h2><span class="num">4</span> Rangos de % de grasa corporal</h2>
+      <p>El porcentaje de grasa corporal varía según el sexo y la edad. A continuación se presentan los rangos generales aceptados por la comunidad científica y deportiva:</p>
+      <table class="docs-table">
+        <tr><th>Categoría</th><th>Hombres</th><th>Mujeres</th></tr>
+        <tr><td><strong>Esencial</strong></td><td>2-5%</td><td>10-13%</td></tr>
+        <tr><td><strong>Atleta</strong></td><td>6-13%</td><td>14-20%</td></tr>
+        <tr><td><strong>Fitness</strong></td><td>14-17%</td><td>21-24%</td></tr>
+        <tr><td><strong>Promedio</strong></td><td>18-24%</td><td>25-31%</td></tr>
+        <tr><td><strong>Sobrepeso</strong></td><td>25-29%</td><td>32-39%</td></tr>
+        <tr><td><strong>Obeso</strong></td><td>&ge;30%</td><td>&ge;40%</td></tr>
+      </table>
+      <p><strong>Nota importante:</strong> El rango "esencial" representa el mínimo necesario para la supervivencia y el funcionamiento hormonal. Mantenerse por debajo de este umbral durante períodos prolongados puede causar problemas de salud graves.</p>
+      <p>La grasa esencial en hombres es aproximadamente del 3% y en mujeres del 12%, debido a las diferencias hormonales y a la distribución de grasa en órganos reproductivos. Por encima de esto está la grasa de almacenamiento.</p>
+    </div>
+
+    <!-- 5. Factores de actividad -->
+    <div class="card docs-section" id="docs-actividad">
+      <h2><span class="num">5</span> Factores de actividad (TDEE)</h2>
+      <p>El <strong>TDEE</strong> (Total Daily Energy Expenditure) se calcula multiplicando el BMR por un factor que refleja tu nivel de actividad diaria. Estos factores provienen de estudios de la FAO/OMS:</p>
+      <table class="docs-table">
+        <tr><th>Factor</th><th>Nivel</th><th>Descripción</th></tr>
+        <tr><td><strong>1.20</strong></td><td>Sedentario</td><td>Poco o nada de ejercicio, trabajo de oficina, < 5000 pasos/día</td></tr>
+        <tr><td><strong>1.375</strong></td><td>Ligero</td><td>Ejercicio ligero 1-3 días/semana, 5000-7000 pasos/día</td></tr>
+        <tr><td><strong>1.55</strong></td><td>Moderado</td><td>Ejercicio moderado 3-5 días/semana, 7000-10000 pasos/día</td></tr>
+        <tr><td><strong>1.725</strong></td><td>Activo</td><td>Ejercicio intenso 6-7 días/semana, >10000 pasos/día</td></tr>
+        <tr><td><strong>1.90</strong></td><td>Muy activo</td><td>Trabajo físico + ejercicio diario, >15000 pasos/día</td></tr>
+      </table>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>La mayoría de personas <strong>sobrestiman</strong> su nivel de actividad. Si no pierdes peso con un déficit calculado, prueba bajar un nivel de actividad. Recuerda: el "ejercicio" cuenta solo si es intencionado y sostenido (>10 minutos de actividad moderada).</div>
+      </div>
+    </div>
+
+    <!-- 6. Mifflin-St Jeor -->
+    <div class="card docs-section" id="docs-mifflin">
+      <h2><span class="num">6</span> Mifflin-St Jeor (BMR)</h2>
+      <p>Desarrollada en <strong>1990</strong> por Mifflin, St Jeor, Hill y otros. Es la fórmula más precisa para estimar el gasto basal en población general, superando a la ecuación de Harris-Benedict (1919) en múltiples estudios de validación.</p>
+      <div class="formula-box">
+        <span class="comment">// Hombres</span><br>
+        BMR = <span class="var">10</span> &times; peso(kg) <span class="op">+</span> <span class="var">6.25</span> &times; altura(cm) <span class="op">&minus;</span> <span class="var">5</span> &times; edad(años) <span class="op">+</span> <span class="var">5</span><br><br>
+        <span class="comment">// Mujeres</span><br>
+        BMR = <span class="var">10</span> &times; peso(kg) <span class="op">+</span> <span class="var">6.25</span> &times; altura(cm) <span class="op">&minus;</span> <span class="var">5</span> &times; edad(años) <span class="op">&minus;</span> <span class="var">161</span>
+      </div>
+      <p>Esta fórmula se usa como base para calcular el <strong>TDEE</strong> multiplicando el BMR por un factor de actividad. Es precisa para el 82-85% de la población, pero puede fallar en atletas o personas con obesidad mórbida.</p>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>Para una precisión óptima, introduce tu <strong>% de grasa corporal</strong> y usa Katch-McArdle en su lugar. Mifflin-St Jeor puede sobreestimar o subestimar en personas muy musculosas o con obesidad severa.</div>
+      </div>
+    </div>
+
+    <!-- 7. Katch-McArdle -->
+    <div class="card docs-section" id="docs-katch">
+      <h2><span class="num">7</span> Katch-McArdle (BMR avanzado)</h2>
+      <p>Desarrollada por <strong>Frank Katch y William McArdle</strong>. A diferencia de Mifflin-St Jeor, esta fórmula requiere conocer tu <strong>porcentaje de grasa corporal</strong> para calcular la masa magra (Lean Body Mass, LBM).</p>
+      <div class="formula-box">
+        <span class="comment">// Masa magra</span><br>
+        LBM = peso(kg) &times; (<span class="var">1</span> <span class="op">&minus;</span> grasa% / <span class="var">100</span>)<br><br>
+        <span class="comment">// BMR</span><br>
+        BMR = <span class="var">370</span> <span class="op">+</span> (<span class="var">21.6</span> &times; LBM)
+      </div>
+      <p>Es especialmente precisa para <strong>atletas, culturistas y personas con composición corporal atípica</strong>, ya que no depende de la edad ni del sexo directamente. El metabolismo basal está más correlacionado con la masa magra que con el peso total.</p>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>Si no conoces tu % de grasa, usa primero la calculadora de <strong>Grasa corporal</strong> con la fórmula de la Marina, y luego vuelve aquí para introducir el resultado en Katch-McArdle. La diferencia entre Mifflin y Katch puede ser de 200-400 kcal en cuerpos atípicos.</div>
+      </div>
+    </div>
+
+    <!-- 8. Fórmula de la Marina -->
+    <div class="card docs-section" id="docs-navy">
+      <h2><span class="num">8</span> Fórmula de la Marina (US Navy)</h2>
+      <p>Desarrollada por el <strong>Departamento de Defensa de EE.UU.</strong> (Hodgdon & Beckett, 1984). Es una de las estimaciones más precisas basadas en circunferencias, con una correlación de <strong>r &approx; 0.90</strong> frente al pesaje hidrostático (método de referencia histórico).</p>
+      <div class="formula-box">
+        <span class="comment">// Hombres</span><br>
+        %Grasa = <span class="var">495</span> / (<span class="var">1.0324</span> <span class="op">&minus;</span> <span class="var">0.19077</span> &times; log&#8321;&#8320;(cintura <span class="op">&minus;</span> cuello) <span class="op">+</span> <span class="var">0.15456</span> &times; log&#8321;&#8320;(altura)) <span class="op">&minus;</span> <span class="var">450</span><br><br>
+        <span class="comment">// Mujeres</span><br>
+        %Grasa = <span class="var">495</span> / (<span class="var">1.29579</span> <span class="op">&minus;</span> <span class="var">0.35004</span> &times; log&#8321;&#8320;(cintura <span class="op">+</span> cadera <span class="op">&minus;</span> cuello) <span class="op">+</span> <span class="var">0.22100</span> &times; log&#8321;&#8320;(altura)) <span class="op">&minus;</span> <span class="var">450</span>
+      </div>
+      <p><strong>Medidas requeridas:</strong></p>
+      <table class="docs-table">
+        <tr><th>Medida</th><th>Hombres</th><th>Mujeres</th></tr>
+        <tr><td>Cuello</td><td>&check; Debajo de la laringe</td><td>&check; Debajo de la laringe</td></tr>
+        <tr><td>Cintura</td><td>&check; A la altura del ombligo</td><td>&check; A la altura del ombligo</td></tr>
+        <tr><td>Cadera</td><td>&mdash;</td><td>&check; Punto más ancho</td></tr>
+        <tr><td>Altura</td><td>&check; En cm</td><td>&check; En cm</td></tr>
+      </table>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>Para resultados consistentes, mide siempre <strong>a la misma hora del día</strong> (preferiblemente por la mañana en ayunas) y usa la misma cinta métrica. Un error de 1 cm en la cintura puede suponer un 1-2% de diferencia en el resultado.</div>
+      </div>
+    </div>
+
+    <!-- 9. Estimación por BMI -->
+    <div class="card docs-section" id="docs-bmi">
+      <h2><span class="num">9</span> Estimación por BMI (modo básico)</h2>
+      <p>Cuando no dispones de cinta métrica, la calculadora usa una fórmula simplificada basada en el <strong>Índice de Masa Corporal (BMI)</strong> y la edad. Fórmula de Deurenberg simplificada:</p>
+      <div class="formula-box">
+        <span class="comment">// BMI</span><br>
+        BMI = peso(kg) / (altura(m))&sup2;<br><br>
+        <span class="comment">// % Grasa estimada</span><br>
+        %Grasa = <span class="var">1.20</span> &times; BMI <span class="op">+</span> <span class="var">0.23</span> &times; edad <span class="op">&minus;</span> <span class="var">16.2</span> <span class="op">&minus;</span> <span class="var">10.8</span> &times; sexo<br>
+        <span class="comment">// sexo: 1 = hombre, 0 = mujer</span>
+      </div>
+      <p>Esta estimación tiene un margen de error mayor (&pm;3-5%) porque no distingue entre grasa y músculo. Un culturista con BMI alto puede aparecer como "obeso" aunque tenga un % de grasa bajo.</p>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>Usa esta estimación solo como orientación. Para un seguimiento serio, invierte en una cinta métrica (5-10€) y usa la fórmula de la Marina. El modo avanzado es significativamente más preciso.</div>
+      </div>
+    </div>
+
+    <!-- 10. Distribución de macros -->
+    <div class="card docs-section" id="docs-macros">
+      <h2><span class="num">10</span> Distribución de macronutrientes</h2>
+      <p>Una vez conoces tus calorías objetivo, la distribución de macros afecta a la composición corporal, la saciedad y el rendimiento:</p>
+      <table class="docs-table">
+        <tr><th>Macro</th><th>Recomendación general</th><th>En déficit</th><th>En superávit</th></tr>
+        <tr><td><strong>Proteína</strong></td><td>1.2-1.6 g/kg</td><td>1.6-2.4 g/kg</td><td>1.6-2.2 g/kg</td></tr>
+        <tr><td><strong>Grasa</strong></td><td>0.8-1.0 g/kg</td><td>0.6-0.8 g/kg</td><td>0.8-1.2 g/kg</td></tr>
+        <tr><td><strong>Carbohidratos</strong></td><td>Resto de calorías</td><td>Resto (prioriza fibra)</td><td>Resto (prioriza alrededor del entreno)</td></tr>
+      </table>
+      <p><strong>Proteína:</strong> 4 kcal/g. Fuente principal de aminoácidos esenciales. La leucina (2.5-3 g por comida) es el principal activador de la síntesis proteica muscular (mTOR).</p>
+      <p><strong>Grasa:</strong> 9 kcal/g. Esencial para hormonas (testosterona, estrógeno), absorción de vitaminas liposolubles (A, D, E, K) y salud cerebral. No bajes del 15% de calorías totales.</p>
+      <p><strong>Carbohidratos:</strong> 4 kcal/g. Principal fuente de energía para el entrenamiento de alta intensidad. El glucógeno muscular almacena ~500 g y el hepático ~100 g. La carga de glucógeno mejora el rendimiento en deportes de resistencia.</p>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>La distribución ideal depende de tu tolerancia individual, tipo de entrenamiento y objetivos. Experimenta con diferentes ratios durante 4-6 semanas y evalúa tu rendimiento, energía y composición corporal.</div>
+      </div>
+    </div>
+
+    <!-- 11. Hidratación y electrolitos -->
+    <div class="card docs-section" id="docs-hidratacion">
+      <h2><span class="num">11</span> Hidratación y electrolitos</h2>
+      <p>El agua corporal total representa aproximadamente el 60% del peso en hombres y el 55% en mujeres. La hidratación adecuada es crucial para el rendimiento, la termorregulación y el metabolismo.</p>
+      <p><strong>Recomendación general:</strong> 30-40 ml/kg de peso corporal al día. En climas cálidos o durante ejercicio intenso, aumenta a 45-50 ml/kg. Un atleta de 80 kg puede necesitar 3.5-4 litros diarios.</p>
+      <p><strong>Electrolitos clave:</strong></p>
+      <ul style="margin-left:18px; color:var(--text-secondary); font-size:0.88rem; line-height:1.7; margin-bottom:12px;">
+        <li><strong>Sodio (Na):</strong> 1.5-2.3 g/día. Pierdes 400-700 mg por litro de sudor. En dietas bajas en carbohidratos, la pérdida de sodio aumenta.</li>
+        <li><strong>Potasio (K):</strong> 3.5-4.7 g/día. Presente en plátanos, aguacates, espinacas y patatas.</li>
+        <li><strong>Magnesio (Mg):</strong> 310-420 mg/día. Participa en 300+ reacciones enzimáticas. La deficiencia causa calambres, insomnio y fatiga.</li>
+        <li><strong>Calcio (Ca):</strong> 1000-1200 mg/día. Esencial para la contracción muscular y la densidad ósea.</li>
+      </ul>
+      <div class="docs-tip">
+        <span class="tip-icon">&#9733;</span>
+        <div>El color de la orina es un indicador práctico: amarillo pálido = bien hidratado; amarillo oscuro = necesitas más líquidos. No esperes a tener sed; la sed es un signo tardío de deshidratación.</div>
+      </div>
+    </div>
+
+    <!-- 12. Referencias -->
+    <div class="card docs-section" id="docs-referencias">
+      <h2><span class="num">12</span> Referencias y enlaces</h2>
+      <p style="margin-bottom:8px;">Artículos científicos y fuentes oficiales:</p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://pubmed.ncbi.nlm.nih.gov/2305711/" target="_blank" rel="noopener">Mifflin MD et al. (1990) &mdash; A new predictive equation for resting energy expenditure</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://pubmed.ncbi.nlm.nih.gov/10843133/" target="_blank" rel="noopener">Frankenfield D et al. (2005) &mdash; Comparison of predictive equations</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://pubmed.ncbi.nlm.nih.gov/1535400/" target="_blank" rel="noopener">Hodgdon JA, Beckett MB (1984) &mdash; Prediction of percent body fat</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://www.health.mil/Reference-Center/Publications/2019/12/01/AR-600-9" target="_blank" rel="noopener">U.S. Army Regulation 600-9 &mdash; The Army Body Composition Program</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://pubmed.ncbi.nlm.nih.gov/16353420/" target="_blank" rel="noopener">ACE (2009) &mdash; Percent Body Fat Norms for Men and Women</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://pubmed.ncbi.nlm.nih.gov/17158491/" target="_blank" rel="noopener">Schoenfeld BJ (2010) &mdash; The mechanisms of muscle hypertrophy</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://pubmed.ncbi.nlm.nih.gov/28630601/" target="_blank" rel="noopener">Morton RW et al. (2017) &mdash; Systematic review of protein intake</a></p>
+      <p style="margin-bottom:8px;">&bull; <a class="docs-link" href="https://www.nutrition.gov/topics/basic-nutrition/healthy-eating" target="_blank" rel="noopener">Nutrition.gov &mdash; Healthy Eating</a></p>
+      <p>&bull; <a class="docs-link" href="https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight" target="_blank" rel="noopener">OMS &mdash; Obesidad y sobrepeso</a></p>
+    </div>
+  </div>
+
+  </div>
+</main>
+
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal" id="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Cómo medir</div>
-      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-body">
       <div class="diagram" id="modal-diagram"></div>
@@ -326,20 +1077,65 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  // ===== NAVEGACIÓN =====
-  function switchView(view) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('view-' + view).classList.add('active');
-    document.getElementById('tab-' + view).classList.add('active');
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
   }
 
-  // ===== SINCRONIZACIÓN DE CAMPOS COMUNES (sin persistencia) =====
+  function switchView(view) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    document.getElementById('nav-' + view).classList.add('active');
+    if (window.innerWidth <= 900) {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('show');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Navegación directa a sección de documentación
+  function goToDocs(sectionId) {
+    switchView('docs');
+    setTimeout(() => {
+      const el = document.getElementById('docs-' + sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Efecto visual de highlight
+        el.style.transition = 'box-shadow 0.5s ease';
+        el.style.boxShadow = '0 0 0 3px var(--accent-light), var(--shadow-card)';
+        setTimeout(() => {
+          el.style.boxShadow = 'var(--shadow-card)';
+        }, 2000);
+      }
+    }, 350);
+  }
+
+  // Manejar hash al cargar la página
+  function handleHash() {
+    const hash = window.location.hash;
+    if (hash) {
+      const sectionId = hash.replace('#', '');
+      if (sectionId.startsWith('docs-')) {
+        switchView('docs');
+        setTimeout(() => {
+          const el = document.getElementById(sectionId);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+      } else if (['cal', 'grasa', 'docs'].includes(sectionId)) {
+        switchView(sectionId);
+      }
+    }
+  }
+
   const syncMap = [
     ['c-sexo', 'g-sexo'],
     ['c-altura', 'g-altura'],
-    ['c-peso', 'g-peso']
+    ['c-peso', 'g-peso'],
+    ['c-edad', 'g-edad']
   ];
   syncMap.forEach(([idA, idB]) => {
     const elA = document.getElementById(idA);
@@ -347,62 +1143,64 @@
     if (!elA || !elB) return;
     elA.addEventListener('input', () => { elB.value = elA.value; });
     elB.addEventListener('input', () => { elA.value = elB.value; });
-    // Para selects
     elA.addEventListener('change', () => { elB.value = elA.value; });
     elB.addEventListener('change', () => { elA.value = elB.value; });
   });
 
-  // ===== TOGGLE AVANZADO =====
+  function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast' + (type === 'error' ? ' error' : '');
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
   function toggleAdv(id) {
     const row = document.getElementById('toggle-' + id);
     const box = document.getElementById('adv-' + id);
     const isOpen = row.classList.toggle('active');
     if (isOpen) box.classList.add('open');
     else box.classList.remove('open');
-    if (id === 'grasa') updateCadera();
+    if (id === 'grasa') {
+      updateCadera();
+      setTimeout(() => {
+        const advOpen = document.getElementById('toggle-grasa').classList.contains('active');
+        document.getElementById('g-peso-field').style.display = advOpen ? 'none' : 'flex';
+      }, 50);
+    }
   }
 
   function updateCadera() {
     const sexo = document.getElementById('g-sexo').value;
     const field = document.getElementById('field-cadera');
+    const grid = document.getElementById('grid-medidas');
     field.style.display = sexo === 'M' ? 'flex' : 'none';
+    if (grid) grid.style.gridTemplateColumns = sexo === 'M' ? '1fr 1fr 1fr' : '1fr 1fr';
   }
   document.getElementById('g-sexo').addEventListener('change', updateCadera);
-
-  document.getElementById('toggle-grasa').addEventListener('click', function() {
-    setTimeout(() => {
-      const advOpen = document.getElementById('toggle-grasa').classList.contains('active');
-      document.getElementById('g-peso-field').style.display = advOpen ? 'none' : 'flex';
-    }, 50);
+  document.getElementById('c-sexo').addEventListener('change', () => {
+    document.getElementById('g-sexo').value = document.getElementById('c-sexo').value;
+    updateCadera();
+  });
+  document.getElementById('g-sexo').addEventListener('change', () => {
+    document.getElementById('c-sexo').value = document.getElementById('g-sexo').value;
   });
 
-  // ===== MODAL CON SVGs INLINE REDISEÑADOS =====
   const diagrams = {
     neck: {
       title: 'Cómo medir el cuello',
       svg: `<svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
-        <!-- Cabeza simplificada -->
         <ellipse cx="120" cy="55" rx="35" ry="40" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
-        <!-- Cuello -->
         <path d="M95 92 Q120 82 145 92 L145 118 Q120 128 95 118 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
-        <!-- Hombros -->
         <path d="M55 118 Q75 108 95 118" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
         <path d="M145 118 Q165 108 185 118" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
-        <!-- Línea de medición -->
         <ellipse cx="120" cy="108" rx="28" ry="10" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-dasharray="5 3"/>
-        <!-- Flechas de medición -->
         <line x1="92" y1="108" x2="82" y2="108" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowN)"/>
         <line x1="148" y1="108" x2="158" y2="108" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowN)"/>
-        <!-- Punto central -->
         <circle cx="120" cy="108" r="4" fill="#4f46e5"/>
-        <!-- Etiqueta con fondo amplio -->
         <rect x="35" y="145" width="170" height="28" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
         <text x="120" y="164" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="700">Justo debajo de la laringe</text>
-        <defs>
-          <marker id="arrowN" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-            <path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/>
-          </marker>
-        </defs>
+        <defs><marker id="arrowN" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/></marker></defs>
       </svg>`,
       steps: [
         'Ponte de pie, mirando al frente, <strong>hombros relajados</strong>.',
@@ -414,25 +1212,15 @@
     waist: {
       title: 'Cómo medir la cintura',
       svg: `<svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg">
-        <!-- Torso -->
         <path d="M80 45 Q120 38 160 45 L152 125 Q120 138 88 125 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
-        <!-- Ombligo marcado -->
         <circle cx="120" cy="95" r="3" fill="#94a3b8"/>
-        <!-- Línea de medición -->
         <ellipse cx="120" cy="95" rx="38" ry="12" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-dasharray="5 3"/>
-        <!-- Flechas -->
         <line x1="82" y1="95" x2="70" y2="95" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowW)"/>
         <line x1="158" y1="95" x2="170" y2="95" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowW)"/>
-        <!-- Punto -->
         <circle cx="120" cy="95" r="4" fill="#4f46e5"/>
-        <!-- Etiqueta -->
         <rect x="45" y="155" width="150" height="28" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
         <text x="120" y="174" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="700">A la altura del ombligo</text>
-        <defs>
-          <marker id="arrowW" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-            <path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/>
-          </marker>
-        </defs>
+        <defs><marker id="arrowW" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/></marker></defs>
       </svg>`,
       steps: [
         'Ponte de pie, <strong>pies juntos</strong>, abdomen relajado.',
@@ -444,23 +1232,14 @@
     hip: {
       title: 'Cómo medir la cadera',
       svg: `<svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg">
-        <!-- Caderas / glúteos -->
         <path d="M70 55 Q120 42 170 55 L178 130 Q120 150 62 130 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
-        <!-- Línea de medición -->
         <ellipse cx="120" cy="115" rx="48" ry="16" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-dasharray="5 3"/>
-        <!-- Flechas -->
         <line x1="72" y1="115" x2="58" y2="115" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowH)"/>
         <line x1="168" y1="115" x2="182" y2="115" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowH)"/>
-        <!-- Punto -->
         <circle cx="120" cy="115" r="4" fill="#4f46e5"/>
-        <!-- Etiqueta -->
         <rect x="25" y="165" width="190" height="28" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
         <text x="120" y="184" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="700">Punto más ancho de los glúteos</text>
-        <defs>
-          <marker id="arrowH" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-            <path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/>
-          </marker>
-        </defs>
+        <defs><marker id="arrowH" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/></marker></defs>
       </svg>`,
       steps: [
         'Ponte de pie, <strong>pies juntos</strong>, peso distribuido equitativamente.',
@@ -493,11 +1272,14 @@
     if (e.key === 'Escape') closeModal();
   });
 
-  // ===== ANIMACIÓN CONTADOR =====
-  function animateValue(id, start, end, suffix, duration) {
+  function animateValue(id, start, end, suffix, duration, decimals) {
     const obj = document.getElementById(id);
     const range = end - start;
-    const minTimer = 50;
+    if (range === 0) {
+      obj.textContent = (decimals ? end.toFixed(decimals) : end.toLocaleString('es-ES')) + suffix;
+      return;
+    }
+    const minTimer = 16;
     let stepTime = Math.abs(Math.floor(duration / range));
     stepTime = Math.max(stepTime, minTimer);
     let startTime = new Date().getTime();
@@ -505,16 +1287,96 @@
     let timer;
     function run() {
       let now = new Date().getTime();
-      let remaining = Math.max((endTime - now) / duration, 0);
-      let value = Math.round(end - (remaining * range));
-      obj.innerHTML = value.toLocaleString('es-ES') + suffix;
-      if (value == end) clearInterval(timer);
+      let progress = Math.min((now - startTime) / duration, 1);
+      let value = start + (range * progress);
+      if (decimals) {
+        obj.textContent = value.toFixed(decimals) + suffix;
+      } else {
+        obj.textContent = Math.round(value).toLocaleString('es-ES') + suffix;
+      }
+      if (progress >= 1) clearInterval(timer);
     }
     timer = setInterval(run, stepTime);
     run();
   }
 
-  // ===== CALCULAR CALORÍAS =====
+  function getBodyFatCategory(pct, sexo) {
+    const isM = sexo === 'H';
+    if (isM) {
+      if (pct < 2) return { label: 'Por debajo de esencial', class: 'badge-unknown', desc: 'Por debajo del mínimo esencial. Riesgo para la salud.' };
+      if (pct <= 5) return { label: 'Esencial', class: 'badge-essential', desc: 'Mínimo necesario para la supervivencia. Solo sostenible a corto plazo.' };
+      if (pct <= 13) return { label: 'Atleta', class: 'badge-athlete', desc: 'Excelente condición física. Requiere disciplina estricta.' };
+      if (pct <= 17) return { label: 'Fitness', class: 'badge-fitness', desc: 'Buen equilibrio entre estética, salud y sostenibilidad.' };
+      if (pct <= 24) return { label: 'Promedio', class: 'badge-average', desc: 'Rango saludable para la población general.' };
+      if (pct <= 29) return { label: 'Sobrepeso', class: 'badge-overweight', desc: 'Aumento del riesgo metabólico. Recomendable actuar.' };
+      return { label: 'Obeso', class: 'badge-obese', desc: 'Riesgo elevado de comorbilidades. Consulta médica recomendada.' };
+    } else {
+      if (pct < 10) return { label: 'Por debajo de esencial', class: 'badge-unknown', desc: 'Por debajo del mínimo esencial. Riesgo para la salud.' };
+      if (pct <= 13) return { label: 'Esencial', class: 'badge-essential', desc: 'Mínimo necesario para la supervivencia. Solo sostenible a corto plazo.' };
+      if (pct <= 20) return { label: 'Atleta', class: 'badge-athlete', desc: 'Excelente condición física. Requiere disciplina estricta.' };
+      if (pct <= 24) return { label: 'Fitness', class: 'badge-fitness', desc: 'Buen equilibrio entre estética, salud y sostenibilidad.' };
+      if (pct <= 31) return { label: 'Promedio', class: 'badge-average', desc: 'Rango saludable para la población general.' };
+      if (pct <= 39) return { label: 'Sobrepeso', class: 'badge-overweight', desc: 'Aumento del riesgo metabólico. Recomendable actuar.' };
+      return { label: 'Obeso', class: 'badge-obese', desc: 'Riesgo elevado de comorbilidades. Consulta médica recomendada.' };
+    }
+  }
+
+  function getBodyFatRecommendations(pct, sexo, edad) {
+    const cat = getBodyFatCategory(pct, sexo);
+    let rec = '';
+    if (cat.label === 'Esencial' || cat.label === 'Por debajo de esencial') {
+      rec = 'Tu nivel de grasa está por debajo del mínimo recomendado. Esto puede afectar la producción hormonal, el sistema inmune y la densidad ósea. <strong>Consulta a un médico o nutricionista</strong> antes de continuar cualquier régimen restrictivo. Aumenta ligeramente el consumo de grasas saludables (aguacate, frutos secos, aceite de oliva) y considera reducir el volumen de cardio.';
+    } else if (cat.label === 'Atleta') {
+      rec = 'Estás en un rango de atleta. Excelente condición física, pero requiere disciplina constante. Asegúrate de consumir suficiente proteína (1.6-2.2 g/kg) y grasas esenciales para mantener la salud hormonal. Si buscas mantener este nivel a largo plazo, planifica períodos de mantenimiento y evita déficits calóricos prolongados sin descanso.';
+    } else if (cat.label === 'Fitness') {
+      rec = 'Rango ideal para la mayoría de personas. Es sostenible con hábitos saludables sin extremos. Mantén una dieta equilibrada rica en proteínas, grasas saludables y carbohidratos complejos. Combina entrenamiento de fuerza 3-4 veces por semana con actividad cardiovascular moderada.';
+    } else if (cat.label === 'Promedio') {
+      rec = 'Rango saludable y común. Si tu objetivo es mejorar la composición corporal, considera aumentar el entrenamiento de fuerza y ajustar ligeramente tu ingesta calórica en un déficit suave de 200-300 kcal. Prioriza la calidad del sueño y la hidratación.';
+    } else if (cat.label === 'Sobrepeso') {
+      rec = 'Tu nivel de grasa corporal indica un aumento del riesgo metabólico. Se recomienda un <strong>déficit calórico moderado de 300-500 kcal</strong> combinado con entrenamiento de fuerza y cardio. Evita dietas extremas; la consistencia semanal es más importante que la perfección. Considera consultar a un profesional si tienes antecedentes familiares de diabetes o enfermedades cardiovasculares.';
+    } else {
+      rec = 'Tu nivel de grasa corporal está asociado a un riesgo elevado de comorbilidades (diabetes tipo 2, hipertensión, enfermedades cardiovasculares). <strong>Se recomienda consulta médica</strong> para descartar condiciones previas. Inicia cambios graduales: un déficit de 500 kcal, caminatas diarias y entrenamiento de fuerza 2-3 veces por semana. La pérdida del 5-10% de tu peso corporal ya mejora significativamente los marcadores de salud.';
+    }
+
+    if (edad && edad > 50) {
+      rec += ' A tu edad, la pérdida de masa magra es más rápida, por lo que el entrenamiento de fuerza es especialmente crucial para mantener la funcionalidad y el metabolismo.';
+    } else if (edad && edad < 25) {
+      rec += ' A tu edad, el metabolismo basal es generalmente más alto, lo que facilita los cambios de composición corporal con hábitos consistentes.';
+    }
+    return rec;
+  }
+
+  function getBodyFatAgeContext(pct, sexo, edad) {
+    if (!edad) return '';
+    let ageRange = '';
+    if (edad < 30) ageRange = '20-29';
+    else if (edad < 40) ageRange = '30-39';
+    else if (edad < 50) ageRange = '40-49';
+    else if (edad < 60) ageRange = '50-59';
+    else if (edad < 70) ageRange = '60-69';
+    else ageRange = '70-79';
+
+    const ranges = {
+      '20-29': { H: [8, 19], M: [16, 24] },
+      '30-39': { H: [11, 21], M: [17, 25] },
+      '40-49': { H: [13, 23], M: [20, 27] },
+      '50-59': { H: [15, 25], M: [22, 29] },
+      '60-69': { H: [16, 26], M: [23, 30] },
+      '70-79': { H: [17, 27], M: [24, 31] }
+    };
+
+    const r = ranges[ageRange][sexo];
+    if (!r) return '';
+
+    if (pct < r[0]) {
+      return 'Para tu edad (' + ageRange + ' años), tu % de grasa está <strong>por debajo</strong> del rango saludable recomendado (' + r[0] + '-' + r[1] + '%). ';
+    } else if (pct > r[1]) {
+      return 'Para tu edad (' + ageRange + ' años), tu % de grasa está <strong>por encima</strong> del rango saludable recomendado (' + r[0] + '-' + r[1] + '%). ';
+    } else {
+      return 'Para tu edad (' + ageRange + ' años), tu % de grasa se encuentra <strong>dentro del rango saludable</strong> (' + r[0] + '-' + r[1] + '%). ';
+    }
+  }
+
   function calcCal() {
     const sexo = document.getElementById('c-sexo').value;
     const edad = parseFloat(document.getElementById('c-edad').value);
@@ -524,7 +1386,10 @@
     const grasa = parseFloat(document.getElementById('c-grasa').value);
     const objetivo = parseFloat(document.getElementById('c-objetivo').value) || 0;
 
-    if (!edad || !peso || !altura) { alert('Completa edad, peso y altura'); return; }
+    if (!edad || !peso || !altura) { showToast('Completa edad, peso y altura', 'error'); return; }
+    if (edad < 10 || edad > 100) { showToast('Edad fuera de rango válido', 'error'); return; }
+    if (peso < 30 || peso > 250) { showToast('Peso fuera de rango válido', 'error'); return; }
+    if (altura < 100 || altura > 250) { showToast('Altura fuera de rango válido', 'error'); return; }
 
     let bmr, metodo;
     if (!isNaN(grasa) && grasa > 0) {
@@ -541,63 +1406,101 @@
 
     const resBox = document.getElementById('res-cal');
     resBox.classList.remove('show');
+    document.getElementById('analysis-cal').classList.remove('show');
+
     setTimeout(() => {
       animateValue('val-cal', 0, final, ' kcal', 800);
       document.getElementById('sub-cal').textContent = (objetivo === 0) ? 'Mantenimiento estimado' : (objetivo < 0 ? 'Déficit calórico' : 'Superávit calórico');
-      document.getElementById('det-cal').innerHTML = 'BMR (' + metodo + '): <strong>' + Math.round(bmr).toLocaleString('es-ES') + ' kcal</strong> &#183; TDEE: <strong>' + tdee.toLocaleString('es-ES') + ' kcal</strong>';
+      document.getElementById('det-cal').innerHTML = 'BMR (' + metodo + '): <strong>' + Math.round(bmr).toLocaleString('es-ES') + ' kcal</strong> &middot; TDEE: <strong>' + tdee.toLocaleString('es-ES') + ' kcal</strong>';
       resBox.classList.add('show');
-    }, 100);
+
+      let analysisText = '';
+      if (objetivo === 0) {
+        analysisText = 'Estas calorías representan tu <strong>mantenimiento estimado</strong>. Si consumes esta cantidad diariamente, tu peso debería mantenerse estable. Para cambiar tu composición corporal, considera un déficit de 300-500 kcal para perder grasa o un superávit de 300-500 kcal para ganar músculo.';
+      } else if (objetivo < 0) {
+        analysisText = 'Con este déficit de <strong>' + Math.abs(objetivo) + ' kcal</strong>, podrías perder aproximadamente <strong>' + (Math.abs(objetivo) * 7 / 7700).toFixed(2) + ' kg/semana</strong> de grasa (teórico). Asegúrate de consumir al menos 1.6-2.2 g/kg de proteína para preservar masa muscular. No recomendamos déficits superiores a 750 kcal sin supervisión profesional.';
+      } else {
+        analysisText = 'Con este superávit de <strong>' + objetivo + ' kcal</strong>, podrías ganar aproximadamente <strong>' + (objetivo * 7 / 7700).toFixed(2) + ' kg/semana</strong> (teórico, combinado de músculo y grasa). Prioriza el entrenamiento de fuerza 3-5 veces por semana para maximizar la ganancia de masa magra.';
+      }
+      document.getElementById('analysis-cal-text').innerHTML = analysisText;
+      document.getElementById('analysis-cal').classList.add('show');
+    }, 80);
   }
 
-  // ===== CALCULAR GRASA =====
   function calcGrasa() {
     const sexo = document.getElementById('g-sexo').value;
     const altura = parseFloat(document.getElementById('g-altura').value);
     const avanzado = document.getElementById('toggle-grasa').classList.contains('active');
+    const edad = parseFloat(document.getElementById('c-edad').value) || 30;
 
-    if (!altura) { alert('Introduce la altura'); return; }
+    if (!altura) { showToast('Introduce la altura', 'error'); return; }
+    if (altura < 100 || altura > 250) { showToast('Altura fuera de rango válido', 'error'); return; }
 
     let pct, metodo, detalle;
     if (avanzado) {
       const cuello = parseFloat(document.getElementById('g-cuello').value);
       const cintura = parseFloat(document.getElementById('g-cintura').value);
-      if (!cuello || !cintura) { alert('Introduce cuello y cintura'); return; }
+      if (!cuello || !cintura) { showToast('Introduce cuello y cintura', 'error'); return; }
+      if (cintura <= cuello) { showToast('La cintura debe ser mayor que el cuello', 'error'); return; }
 
       if (sexo === 'H') {
         const logVal = Math.log10(cintura - cuello);
         pct = 495 / (1.0324 - 0.19077 * logVal + 0.15456 * Math.log10(altura)) - 450;
         metodo = 'Fórmula de la Marina (hombres)';
-        detalle = 'Cuello: ' + cuello + ' cm &#183; Cintura: ' + cintura + ' cm &#183; Altura: ' + altura + ' cm';
+        detalle = 'Cuello: ' + cuello + ' cm · Cintura: ' + cintura + ' cm · Altura: ' + altura + ' cm';
       } else {
         const cadera = parseFloat(document.getElementById('g-cadera').value);
-        if (!cadera) { alert('Introduce cadera'); return; }
+        if (!cadera) { showToast('Introduce cadera', 'error'); return; }
         const logVal = Math.log10(cintura + cadera - cuello);
         pct = 495 / (1.29579 - 0.35004 * logVal + 0.22100 * Math.log10(altura)) - 450;
         metodo = 'Fórmula de la Marina (mujeres)';
-        detalle = 'Cuello: ' + cuello + ' cm &#183; Cintura: ' + cintura + ' cm &#183; Cadera: ' + cadera + ' cm &#183; Altura: ' + altura + ' cm';
+        detalle = 'Cuello: ' + cuello + ' cm · Cintura: ' + cintura + ' cm · Cadera: ' + cadera + ' cm · Altura: ' + altura + ' cm';
       }
     } else {
       const peso = parseFloat(document.getElementById('g-peso').value);
-      if (!peso || peso <= 0) { alert('Introduce tu peso para la estimación básica'); return; }
+      if (!peso || peso <= 0) { showToast('Introduce tu peso para la estimación básica', 'error'); return; }
       const bmi = peso / ((altura / 100) ** 2);
-      const edad = 30;
       if (sexo === 'H') pct = 1.20 * bmi + 0.23 * edad - 16.2 - 10.8 * 1;
       else pct = 1.20 * bmi + 0.23 * edad - 16.2 - 10.8 * 0;
       metodo = 'Estimación por BMI (orientativa)';
-      detalle = 'BMI: ' + bmi.toFixed(1) + ' &#183; Edad asumida ~30 años &#183; Fórmula Deurenberg simplificada';
+      detalle = 'BMI: ' + bmi.toFixed(1) + ' · Edad: ' + edad + ' años · Fórmula Deurenberg simplificada';
     }
 
     pct = Math.max(2, Math.min(60, pct));
 
     const resBox = document.getElementById('res-grasa');
     resBox.classList.remove('show');
+    document.getElementById('analysis-grasa').classList.remove('show');
+
     setTimeout(() => {
-      animateValue('val-grasa', 0, Math.round(pct * 10) / 10, '%', 600);
+      animateValue('val-grasa', 0, Math.round(pct * 10) / 10, '%', 600, 1);
       document.getElementById('sub-grasa').textContent = metodo;
       document.getElementById('det-grasa').textContent = detalle;
       resBox.classList.add('show');
-    }, 100);
+
+      const cat = getBodyFatCategory(pct, sexo);
+      const badge = document.getElementById('badge-grasa');
+      badge.textContent = cat.label;
+      badge.className = 'analysis-badge ' + cat.class;
+
+      let analysisText = '<p><strong>Resultado:</strong> ' + pct.toFixed(1) + '% de grasa corporal. ' + cat.desc + '</p>';
+      analysisText += '<p>' + getBodyFatAgeContext(pct, sexo, edad) + '</p>';
+      analysisText += '<p>La masa magra estimada es de aproximadamente <strong>' + (document.getElementById('g-peso').value ? (parseFloat(document.getElementById('g-peso').value) * (1 - pct/100)).toFixed(1) : '—') + ' kg</strong>.</p>';
+      document.getElementById('analysis-grasa-text').innerHTML = analysisText;
+
+      document.getElementById('analysis-grasa-rec').innerHTML = getBodyFatRecommendations(pct, sexo, edad);
+
+      document.getElementById('analysis-grasa').classList.add('show');
+    }, 80);
   }
+
+  // Inicialización
+  updateCadera();
+  document.getElementById('g-peso-field').style.display = 'flex';
+
+  // Manejar hash al cargar
+  window.addEventListener('load', handleHash);
+  window.addEventListener('hashchange', handleHash);
 </script>
 
 </body>
