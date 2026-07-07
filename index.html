@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitCalc — Calculadora Fitness</title>
+<meta name="description" content="Calculadora minimalista de calorías diarias (TDEE) y % de grasa corporal. Fórmulas Mifflin-St Jeor, Katch-McArdle y US Navy.">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --text-secondary: #64748b;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --accent-light: #eef2ff;
+    --accent-ghost: #e0e7ff;
+    --border: #e2e8f0;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 10px 30px rgba(0,0,0,0.06);
+    --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.1);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; line-height: 1.5; }
+  .app-container { width: 100%; max-width: 520px; }
+  header { text-align: center; margin-bottom: 28px; animation: fadeDown 0.5s ease; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+  .brand-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 0 4px var(--accent-light); }
+  .tagline { color: var(--text-secondary); font-size: 0.88rem; margin-top: 6px; }
+
+  .nav-tabs { display: flex; gap: 8px; background: var(--surface); padding: 6px; border-radius: var(--radius-lg); box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid var(--border); animation: fadeUp 0.5s ease 0.1s both; }
+  .nav-tab { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .nav-tab:hover { color: var(--text); background: var(--accent-light); }
+  .nav-tab.active { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.25); }
+  .nav-tab .icon { font-size: 1.1rem; }
+
+  .view { display: none; animation: fadeUp 0.4s ease; }
+  .view.active { display: block; }
+
+  .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--border); padding: 28px; margin-bottom: 20px; transition: var(--transition); }
+  .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .card-icon { width: 40px; height: 40px; background: var(--accent-light); color: var(--accent); border-radius: 12px; display: grid; place-items: center; font-size: 1.2rem; }
+  .card-title { font-size: 1.1rem; font-weight: 700; }
+  .card-sub { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+  .field-row { display: flex; align-items: center; gap: 8px; }
+  .field-row input, .field-row select { flex: 1; }
+  label { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; }
+  input, select { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.95rem; background: var(--bg); color: var(--text); outline: none; transition: var(--transition); width: 100%; }
+  input:focus, select:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-light); }
+  input::placeholder { color: #94a3b8; }
+  select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; padding: 12px 14px; background: var(--bg); border-radius: var(--radius-sm); cursor: pointer; user-select: none; transition: var(--transition); border: 1.5px solid transparent; }
+  .toggle-row:hover { border-color: var(--accent-ghost); background: var(--accent-light); }
+  .toggle-row .toggle-label { font-size: 0.88rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .toggle-row .toggle-label .badge { font-size: 0.65rem; background: var(--accent); color: white; padding: 2px 8px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toggle-switch { width: 44px; height: 24px; background: var(--border); border-radius: 12px; position: relative; transition: var(--transition); flex-shrink: 0; }
+  .toggle-switch::after { content: ''; position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: var(--transition); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-row.active .toggle-switch { background: var(--accent); }
+  .toggle-row.active .toggle-switch::after { transform: translateX(20px); }
+
+  .advanced { display: none; overflow: hidden; }
+  .advanced.open { display: block; animation: slideDown 0.35s ease; }
+  @keyframes slideDown { from { opacity: 0; max-height: 0; transform: translateY(-8px); } to { opacity: 1; max-height: 800px; transform: translateY(0); } }
+
+  .link-card { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--accent-light); border: 1.5px dashed var(--accent-ghost); border-radius: var(--radius-sm); margin-top: 14px; cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit; }
+  .link-card:hover { background: var(--accent-ghost); border-style: solid; transform: translateX(4px); }
+  .link-card .link-icon { width: 36px; height: 36px; background: var(--accent); color: white; border-radius: 10px; display: grid; place-items: center; font-size: 1rem; flex-shrink: 0; }
+  .link-card .link-text { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+  .link-card .link-sub { font-size: 0.75rem; color: var(--text-secondary); }
+  .link-card .arrow { margin-left: auto; color: var(--accent); font-size: 1.1rem; transition: transform 0.2s; }
+  .link-card:hover .arrow { transform: translateX(4px); }
+
+  .btn { width: 100%; padding: 13px; border: none; border-radius: var(--radius-sm); background: var(--accent); color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; margin-top: 18px; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.2px; }
+  .btn:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(79,70,229,0.25); }
+  .btn:active { transform: translateY(0); }
+
+  .result { margin-top: 20px; padding: 20px; background: var(--accent-light); border-radius: var(--radius-md); text-align: center; display: none; border: 1px solid var(--accent-ghost); position: relative; overflow: hidden; }
+  .result::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); }
+  .result.show { display: block; animation: fadeUp 0.5s ease; }
+  .result .big { font-size: 2.4rem; font-weight: 800; color: var(--accent); line-height: 1; letter-spacing: -1px; }
+  .result .small { font-size: 0.88rem; color: var(--text-secondary); margin-top: 8px; font-weight: 500; }
+  .result .detail { font-size: 0.78rem; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--accent-ghost); line-height: 1.5; }
+
+  .note { font-size: 0.75rem; color: var(--text-secondary); margin-top: 12px; line-height: 1.5; }
+
+  .help-btn { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-light); color: var(--accent); border: 1.5px solid var(--accent-ghost); font-size: 0.7rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition); flex-shrink: 0; }
+  .help-btn:hover { background: var(--accent); color: white; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; opacity: 0; transition: opacity 0.3s ease; }
+  .modal-overlay.show { display: flex; opacity: 1; }
+  .modal { background: var(--surface); border-radius: var(--radius-lg); max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); border: 1px solid var(--border); transform: translateY(20px) scale(0.96); transition: transform 0.3s ease; }
+  .modal-overlay.show .modal { transform: translateY(0) scale(1); }
+  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 1.05rem; font-weight: 700; }
+  .modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bg); color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; display: grid; place-items: center; transition: var(--transition); }
+  .modal-close:hover { background: var(--accent-light); color: var(--accent); }
+  .modal-body { padding: 16px 24px 24px; }
+  .diagram { width: 100%; background: var(--bg); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px; }
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .measure-list { display: flex; flex-direction: column; gap: 10px; }
+  .measure-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); }
+  .measure-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
+  .measure-text { font-size: 0.82rem; color: var(--text); line-height: 1.5; }
+  .measure-text strong { color: var(--accent); }
+
+  footer { text-align: center; margin-top: 32px; color: var(--text-secondary); font-size: 0.75rem; animation: fadeUp 0.6s ease 0.3s both; }
+  footer .heart { color: #ef4444; display: inline-block; animation: heartbeat 1.5s infinite; }
+  @keyframes heartbeat { 0%,100%{transform:scale(1)} 14%{transform:scale(1.15)} 28%{transform:scale(1)} 42%{transform:scale(1.15)} }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 480px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+    .result .big { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <header>
+    <div class="brand"><div class="brand-dot"></div>FitCalc</div>
+    <div class="tagline">Calculadora de composición corporal & metabolismo</div>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" id="tab-cal" onclick="switchView('cal')">
+      <span class="icon">&#128293;</span> Calorías
+    </button>
+    <button class="nav-tab" id="tab-grasa" onclick="switchView('grasa')">
+      <span class="icon">&#128207;</span> Grasa corporal
+    </button>
+  </nav>
+
+  <!-- VISTA CALORÍAS -->
+  <div class="view active" id="view-cal">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">&#128293;</div>
+        <div>
+          <div class="card-title">Calorías diarias (TDEE)</div>
+          <div class="card-sub">Gasto energético total estimado</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Sexo</label>
+          <select id="c-sexo"><option value="H">Hombre</option><option value="M">Mujer</option></select>
+        </div>
+        <div class="field">
+          <label>Edad</label>
+          <input type="number" id="c-edad" placeholder="30" min="10" max="100">
+        </div>
+        <div class="field">
+          <label>Peso (kg)</label>
+          <input type="number" id="c-peso" placeholder="75.0" min="30" max="250" step="0.1">
+        </div>
+        <div class="field">
+          <label>Altura (cm)</label>
+          <input type="number" id="c-altura" placeholder="175" min="100" max="250">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>Nivel de actividad</label>
+        <select id="c-actividad">
+          <option value="1.2">Sedentario (poco o nada de ejercicio)</option>
+          <option value="1.375">Ligero (1-3 días/semana)</option>
+          <option value="1.55" selected>Moderado (3-5 días/semana)</option>
+          <option value="1.725">Activo (6-7 días/semana)</option>
+          <option value="1.9">Muy activo (trabajo físico + ejercicio)</option>
+        </select>
+      </div>
+
+      <div class="toggle-row" id="toggle-cal" onclick="toggleAdv('cal')">
+        <div class="toggle-label">Modo avanzado <span class="badge">Pro</span></div>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="advanced" id="adv-cal">
+        <div class="grid-2">
+          <div class="field">
+            <label>% Grasa corporal (opcional)</label>
+            <input type="number" id="c-grasa" placeholder="20.0" min="3" max="60" step="0.1">
+          </div>
+          <div class="field">
+            <label>Objetivo</label>
+            <select id="c-objetivo">
+              <option value="0">Mantener peso</option>
+              <option value="-500">Pérdida de grasa (-500 kcal)</option>
+              <option value="-300">Pérdida suave (-300 kcal)</option>
+              <option value="300">Ganancia muscular (+300 kcal)</option>
+              <option value="500">Ganancia fuerte (+500 kcal)</option>
+            </select>
+          </div>
+        </div>
+        <p class="note">Si introduces tu % de grasa, se usa <strong>Katch-McArdle</strong> (más precisa para cuerpos atípicos). Si no, <strong>Mifflin-St Jeor</strong>.</p>
+
+        <div class="link-card" onclick="switchView('grasa')">
+          <div class="link-icon">&#128207;</div>
+          <div>
+            <div class="link-text">¿No conoces tu % de grasa corporal?</div>
+            <div class="link-sub">Calcúlalo ahora con la fórmula de la Marina &#8594;</div>
+          </div>
+          <div class="arrow">&#8250;</div>
+        </div>
+      </div>
+
+      <button class="btn" onclick="calcCal()">Calcular calorías</button>
+
+      <div class="result" id="res-cal">
+        <div class="big" id="val-cal">0</div>
+        <div class="small" id="sub-cal">kcal / día</div>
+        <div class="detail" id="det-cal"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA GRASA CORPORAL -->
+  <div class="view" id="view-grasa">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">&#128207;</div>
+        <div>
+          <div class="card-title">% Grasa corporal</div>
+          <div class="card-sub">Estimación de composición corporal</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Sexo</label>
+          <select id="g-sexo"><option value="H">Hombre</option><option value="M">Mujer</option></select>
+        </div>
+        <div class="field">
+          <label>Altura (cm)</label>
+          <input type="number" id="g-altura" placeholder="175" min="100" max="250">
+        </div>
+      </div>
+
+      <div class="toggle-row" id="toggle-grasa" onclick="toggleAdv('grasa')">
+        <div class="toggle-label">Fórmula de la Marina (Navy) <span class="badge">Pro</span></div>
+        <div class="toggle-switch"></div>
+      </div>
+      <div class="advanced" id="adv-grasa">
+        <div class="grid-3">
+          <div class="field">
+            <div class="field-row">
+              <label style="margin:0;">Cuello (cm)</label>
+              <button class="help-btn" onclick="openModal('neck')" title="¿Dónde medir?">?</button>
+            </div>
+            <input type="number" id="g-cuello" placeholder="40.0" min="20" max="70" step="0.1">
+          </div>
+          <div class="field">
+            <div class="field-row">
+              <label style="margin:0;">Cintura (cm)</label>
+              <button class="help-btn" onclick="openModal('waist')" title="¿Dónde medir?">?</button>
+            </div>
+            <input type="number" id="g-cintura" placeholder="85.0" min="40" max="200" step="0.1">
+          </div>
+          <div class="field" id="field-cadera" style="display:none;">
+            <div class="field-row">
+              <label style="margin:0;">Cadera (cm)</label>
+              <button class="help-btn" onclick="openModal('hip')" title="¿Dónde medir?">?</button>
+            </div>
+            <input type="number" id="g-cadera" placeholder="95.0" min="40" max="200" step="0.1">
+          </div>
+        </div>
+        <p class="note">Fórmula del Departamento de Defensa de EE.UU. (US Navy). Para mujeres se requiere medida de cadera. Mide la cintura a la altura del ombligo.</p>
+      </div>
+
+      <div class="field" style="margin-top:12px;" id="g-peso-field">
+        <label>Peso (kg) — solo para estimación básica</label>
+        <input type="number" id="g-peso" placeholder="75.0" min="30" max="250" step="0.1">
+      </div>
+
+      <button class="btn" onclick="calcGrasa()">Calcular % grasa</button>
+
+      <div class="result" id="res-grasa">
+        <div class="big" id="val-grasa">0%</div>
+        <div class="small" id="sub-grasa">Estimación orientativa</div>
+        <div class="detail" id="det-grasa"></div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:18px; cursor:pointer;" onclick="switchView('cal')">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:36px;height:36px;background:var(--accent-light);color:var(--accent);border-radius:10px;display:grid;place-items:center;font-size:1rem;">&#128293;</div>
+        <div style="flex:1;">
+          <div style="font-size:0.88rem;font-weight:700;">Volver a calculadora de calorías</div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);">Usa tu % de grasa para un cálculo más preciso del TDEE</div>
+        </div>
+        <div style="color:var(--accent);font-size:1.2rem;">&#8249;</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Fórmulas: Mifflin-St Jeor, Katch-McArdle &amp; US Navy<br>
+    <span style="opacity:0.7;">Los resultados son orientativos. Consulta a un profesional.</span>
+  </footer>
+</div>
+
+<!-- MODAL DE AYUDA -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Cómo medir</div>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="diagram" id="modal-diagram"></div>
+      <div class="measure-list" id="modal-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== NAVEGACIÓN =====
+  function switchView(view) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    document.getElementById('tab-' + view).classList.add('active');
+  }
+
+  // ===== SINCRONIZACIÓN DE CAMPOS COMUNES (sin persistencia) =====
+  const syncMap = [
+    ['c-sexo', 'g-sexo'],
+    ['c-altura', 'g-altura'],
+    ['c-peso', 'g-peso']
+  ];
+  syncMap.forEach(([idA, idB]) => {
+    const elA = document.getElementById(idA);
+    const elB = document.getElementById(idB);
+    if (!elA || !elB) return;
+    elA.addEventListener('input', () => { elB.value = elA.value; });
+    elB.addEventListener('input', () => { elA.value = elB.value; });
+    // Para selects
+    elA.addEventListener('change', () => { elB.value = elA.value; });
+    elB.addEventListener('change', () => { elA.value = elB.value; });
+  });
+
+  // ===== TOGGLE AVANZADO =====
+  function toggleAdv(id) {
+    const row = document.getElementById('toggle-' + id);
+    const box = document.getElementById('adv-' + id);
+    const isOpen = row.classList.toggle('active');
+    if (isOpen) box.classList.add('open');
+    else box.classList.remove('open');
+    if (id === 'grasa') updateCadera();
+  }
+
+  function updateCadera() {
+    const sexo = document.getElementById('g-sexo').value;
+    const field = document.getElementById('field-cadera');
+    field.style.display = sexo === 'M' ? 'flex' : 'none';
+  }
+  document.getElementById('g-sexo').addEventListener('change', updateCadera);
+
+  document.getElementById('toggle-grasa').addEventListener('click', function() {
+    setTimeout(() => {
+      const advOpen = document.getElementById('toggle-grasa').classList.contains('active');
+      document.getElementById('g-peso-field').style.display = advOpen ? 'none' : 'flex';
+    }, 50);
+  });
+
+  // ===== MODAL CON SVGs INLINE REDISEÑADOS =====
+  const diagrams = {
+    neck: {
+      title: 'Cómo medir el cuello',
+      svg: `<svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Cabeza simplificada -->
+        <ellipse cx="120" cy="55" rx="35" ry="40" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        <!-- Cuello -->
+        <path d="M95 92 Q120 82 145 92 L145 118 Q120 128 95 118 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        <!-- Hombros -->
+        <path d="M55 118 Q75 108 95 118" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        <path d="M145 118 Q165 108 185 118" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        <!-- Línea de medición -->
+        <ellipse cx="120" cy="108" rx="28" ry="10" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <!-- Flechas de medición -->
+        <line x1="92" y1="108" x2="82" y2="108" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowN)"/>
+        <line x1="148" y1="108" x2="158" y2="108" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowN)"/>
+        <!-- Punto central -->
+        <circle cx="120" cy="108" r="4" fill="#4f46e5"/>
+        <!-- Etiqueta con fondo amplio -->
+        <rect x="35" y="145" width="170" height="28" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+        <text x="120" y="164" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="700">Justo debajo de la laringe</text>
+        <defs>
+          <marker id="arrowN" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/>
+          </marker>
+        </defs>
+      </svg>`,
+      steps: [
+        'Ponte de pie, mirando al frente, <strong>hombros relajados</strong>.',
+        'Coloca la cinta justo <strong>debajo de la nuez de Adán</strong> (laringe).',
+        'La cinta debe estar <strong>horizontal y ajustada</strong>, sin hundirse en la piel.',
+        'No encojas el cuello ni lo saques hacia afuera.'
+      ]
+    },
+    waist: {
+      title: 'Cómo medir la cintura',
+      svg: `<svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- Torso -->
+        <path d="M80 45 Q120 38 160 45 L152 125 Q120 138 88 125 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        <!-- Ombligo marcado -->
+        <circle cx="120" cy="95" r="3" fill="#94a3b8"/>
+        <!-- Línea de medición -->
+        <ellipse cx="120" cy="95" rx="38" ry="12" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <!-- Flechas -->
+        <line x1="82" y1="95" x2="70" y2="95" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowW)"/>
+        <line x1="158" y1="95" x2="170" y2="95" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowW)"/>
+        <!-- Punto -->
+        <circle cx="120" cy="95" r="4" fill="#4f46e5"/>
+        <!-- Etiqueta -->
+        <rect x="45" y="155" width="150" height="28" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+        <text x="120" y="174" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="700">A la altura del ombligo</text>
+        <defs>
+          <marker id="arrowW" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/>
+          </marker>
+        </defs>
+      </svg>`,
+      steps: [
+        'Ponte de pie, <strong>pies juntos</strong>, abdomen relajado.',
+        'Mide a la altura del <strong>ombligo</strong> (hombres) o punto más estrecho (mujeres).',
+        'La cinta debe estar <strong>paralela al suelo</strong>.',
+        'Lee la medida tras una <strong>exhalación normal</strong>, sin meter tripa.'
+      ]
+    },
+    hip: {
+      title: 'Cómo medir la cadera',
+      svg: `<svg viewBox="0 0 240 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- Caderas / glúteos -->
+        <path d="M70 55 Q120 42 170 55 L178 130 Q120 150 62 130 Z" fill="none" stroke="#cbd5e1" stroke-width="2.5"/>
+        <!-- Línea de medición -->
+        <ellipse cx="120" cy="115" rx="48" ry="16" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <!-- Flechas -->
+        <line x1="72" y1="115" x2="58" y2="115" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowH)"/>
+        <line x1="168" y1="115" x2="182" y2="115" stroke="#4f46e5" stroke-width="2.5" marker-end="url(#arrowH)"/>
+        <!-- Punto -->
+        <circle cx="120" cy="115" r="4" fill="#4f46e5"/>
+        <!-- Etiqueta -->
+        <rect x="25" y="165" width="190" height="28" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="1.5"/>
+        <text x="120" y="184" text-anchor="middle" font-size="11" fill="#4f46e5" font-weight="700">Punto más ancho de los glúteos</text>
+        <defs>
+          <marker id="arrowH" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#4f46e5"/>
+          </marker>
+        </defs>
+      </svg>`,
+      steps: [
+        'Ponte de pie, <strong>pies juntos</strong>, peso distribuido equitativamente.',
+        'Coloca la cinta en el <strong>punto más ancho de los glúteos</strong>.',
+        'La cinta debe estar <strong>horizontal y a nivel</strong> en ambos lados.',
+        'No aprietes la cinta; debe estar <strong>ajustada pero cómoda</strong>.'
+      ]
+    }
+  };
+
+  function openModal(type) {
+    const data = diagrams[type];
+    document.getElementById('modal-title').textContent = data.title;
+    document.getElementById('modal-diagram').innerHTML = data.svg;
+    const list = document.getElementById('modal-list');
+    list.innerHTML = data.steps.map(s =>
+      '<div class="measure-item"><div class="measure-dot"></div><div class="measure-text">' + s + '</div></div>'
+    ).join('');
+    document.getElementById('modal-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(e) {
+    if (e && e.target !== document.getElementById('modal-overlay')) return;
+    document.getElementById('modal-overlay').classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ===== ANIMACIÓN CONTADOR =====
+  function animateValue(id, start, end, suffix, duration) {
+    const obj = document.getElementById(id);
+    const range = end - start;
+    const minTimer = 50;
+    let stepTime = Math.abs(Math.floor(duration / range));
+    stepTime = Math.max(stepTime, minTimer);
+    let startTime = new Date().getTime();
+    let endTime = startTime + duration;
+    let timer;
+    function run() {
+      let now = new Date().getTime();
+      let remaining = Math.max((endTime - now) / duration, 0);
+      let value = Math.round(end - (remaining * range));
+      obj.innerHTML = value.toLocaleString('es-ES') + suffix;
+      if (value == end) clearInterval(timer);
+    }
+    timer = setInterval(run, stepTime);
+    run();
+  }
+
+  // ===== CALCULAR CALORÍAS =====
+  function calcCal() {
+    const sexo = document.getElementById('c-sexo').value;
+    const edad = parseFloat(document.getElementById('c-edad').value);
+    const peso = parseFloat(document.getElementById('c-peso').value);
+    const altura = parseFloat(document.getElementById('c-altura').value);
+    const act = parseFloat(document.getElementById('c-actividad').value);
+    const grasa = parseFloat(document.getElementById('c-grasa').value);
+    const objetivo = parseFloat(document.getElementById('c-objetivo').value) || 0;
+
+    if (!edad || !peso || !altura) { alert('Completa edad, peso y altura'); return; }
+
+    let bmr, metodo;
+    if (!isNaN(grasa) && grasa > 0) {
+      const masaMagra = peso * (1 - grasa / 100);
+      bmr = 370 + 21.6 * masaMagra;
+      metodo = 'Katch-McArdle';
+    } else {
+      if (sexo === 'H') bmr = 10 * peso + 6.25 * altura - 5 * edad + 5;
+      else bmr = 10 * peso + 6.25 * altura - 5 * edad - 161;
+      metodo = 'Mifflin-St Jeor';
+    }
+    const tdee = Math.round(bmr * act);
+    const final = tdee + objetivo;
+
+    const resBox = document.getElementById('res-cal');
+    resBox.classList.remove('show');
+    setTimeout(() => {
+      animateValue('val-cal', 0, final, ' kcal', 800);
+      document.getElementById('sub-cal').textContent = (objetivo === 0) ? 'Mantenimiento estimado' : (objetivo < 0 ? 'Déficit calórico' : 'Superávit calórico');
+      document.getElementById('det-cal').innerHTML = 'BMR (' + metodo + '): <strong>' + Math.round(bmr).toLocaleString('es-ES') + ' kcal</strong> &#183; TDEE: <strong>' + tdee.toLocaleString('es-ES') + ' kcal</strong>';
+      resBox.classList.add('show');
+    }, 100);
+  }
+
+  // ===== CALCULAR GRASA =====
+  function calcGrasa() {
+    const sexo = document.getElementById('g-sexo').value;
+    const altura = parseFloat(document.getElementById('g-altura').value);
+    const avanzado = document.getElementById('toggle-grasa').classList.contains('active');
+
+    if (!altura) { alert('Introduce la altura'); return; }
+
+    let pct, metodo, detalle;
+    if (avanzado) {
+      const cuello = parseFloat(document.getElementById('g-cuello').value);
+      const cintura = parseFloat(document.getElementById('g-cintura').value);
+      if (!cuello || !cintura) { alert('Introduce cuello y cintura'); return; }
+
+      if (sexo === 'H') {
+        const logVal = Math.log10(cintura - cuello);
+        pct = 495 / (1.0324 - 0.19077 * logVal + 0.15456 * Math.log10(altura)) - 450;
+        metodo = 'Fórmula de la Marina (hombres)';
+        detalle = 'Cuello: ' + cuello + ' cm &#183; Cintura: ' + cintura + ' cm &#183; Altura: ' + altura + ' cm';
+      } else {
+        const cadera = parseFloat(document.getElementById('g-cadera').value);
+        if (!cadera) { alert('Introduce cadera'); return; }
+        const logVal = Math.log10(cintura + cadera - cuello);
+        pct = 495 / (1.29579 - 0.35004 * logVal + 0.22100 * Math.log10(altura)) - 450;
+        metodo = 'Fórmula de la Marina (mujeres)';
+        detalle = 'Cuello: ' + cuello + ' cm &#183; Cintura: ' + cintura + ' cm &#183; Cadera: ' + cadera + ' cm &#183; Altura: ' + altura + ' cm';
+      }
+    } else {
+      const peso = parseFloat(document.getElementById('g-peso').value);
+      if (!peso || peso <= 0) { alert('Introduce tu peso para la estimación básica'); return; }
+      const bmi = peso / ((altura / 100) ** 2);
+      const edad = 30;
+      if (sexo === 'H') pct = 1.20 * bmi + 0.23 * edad - 16.2 - 10.8 * 1;
+      else pct = 1.20 * bmi + 0.23 * edad - 16.2 - 10.8 * 0;
+      metodo = 'Estimación por BMI (orientativa)';
+      detalle = 'BMI: ' + bmi.toFixed(1) + ' &#183; Edad asumida ~30 años &#183; Fórmula Deurenberg simplificada';
+    }
+
+    pct = Math.max(2, Math.min(60, pct));
+
+    const resBox = document.getElementById('res-grasa');
+    resBox.classList.remove('show');
+    setTimeout(() => {
+      animateValue('val-grasa', 0, Math.round(pct * 10) / 10, '%', 600);
+      document.getElementById('sub-grasa').textContent = metodo;
+      document.getElementById('det-grasa').textContent = detalle;
+      resBox.classList.add('show');
+    }, 100);
+  }
+</script>
+
+</body>
+</html>
